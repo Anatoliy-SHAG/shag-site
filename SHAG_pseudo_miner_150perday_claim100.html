@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mining 1SHAG — 150 SHAG/доба, клейм по 100</title>
+  <style>
+    body{margin:0;background:#0f172a;color:#fff;font-family:system-ui,Segoe UI,Roboto,Arial}
+    header{display:flex;align-items:center;justify-content:center;gap:12px;padding:18px 12px}
+    header img{width:60px;height:60px}
+    h1{margin:0;font-size:28px}
+    .wrap{max-width:900px;margin:0 auto;padding:12px}
+    .panel{background:#111c36;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .stat{font-size:20px;margin:8px 0}
+    .btn{display:block;width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);margin:8px 0;font-weight:700;cursor:pointer}
+    .start{background:#22c55e}.stop{background:#ef4444}.claim{background:#3b82f6}.wallet{background:#a78bfa}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .bar{height:12px;background:#0b1226;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.12)}
+    .bar>div{height:100%;background:linear-gradient(90deg,#00e0a6,#3ba3ff);width:0%}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media(max-width:700px){.row{grid-template-columns:1fr}}
+    .muted{color:#aab7d4;font-size:14px}
+    code{background:#0b1226;border:1px solid rgba(255,255,255,.12);padding:2px 6px;border-radius:6px}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="1SHAG logo" onerror="this.style.display='none'">
+    <h1>Mining 1SHAG</h1>
+  </header>
+
+  <div class="wrap">
+    <div class="panel">
+      <div class="row">
+        <div>
+          <div class="stat">Нарахування: <b>≈150 SHAG / 24 год</b></div>
+          <div class="stat">Баланс (локально): <b><span id="bal">0.000000</span> SHAG</b></div>
+          <div class="bar"><div id="bar"></div></div>
+          <button id="startBtn" class="btn start">Старт</button>
+          <button id="stopBtn" class="btn stop" disabled>Пауза</button>
+          <button id="claimBtn" class="btn claim" disabled>Клейм 100 SHAG</button>
+          <button id="walletBtn" class="btn wallet">Підключити гаманець</button>
+          <div class="muted">Це симуляція. Клейм викликає смартконтракт-фосет, який відправляє <b>100 SHAG</b> на адресу.</div>
+        </div>
+        <div>
+          <div class="muted">
+            Контракт токена: <code>0x38040A7763da2f4aF94fefB0922A3F4Bd5B91772</code><br>
+            Адреса faucet: <code id="faucetAddr">PASTE_FAUCET_ADDRESS</code><br>
+            Мін. клейм: <b>100 SHAG</b> · Мережа: <b>BSC</b> (трохи BNB для газу)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const FAUCET = "PASTE_FAUCET_ADDRESS"; // заміни на адресу свого faucet
+const MIN_LOCAL = 100;
+const EARN_RATE = 150 / 86400; // 150 SHAG / доба
+
+let running=false,last=null,bal=parseFloat(localStorage.getItem('shag_local_bal')||'0');
+const balEl=document.getElementById('bal'), barEl=document.getElementById('bar');
+const startBtn=document.getElementById('startBtn'), stopBtn=document.getElementById('stopBtn'), claimBtn=document.getElementById('claimBtn');
+
+function updUI(){
+  balEl.textContent = bal.toFixed(6);
+  barEl.style.width = Math.min(100,(bal%100))+'%';
+  claimBtn.disabled = !(bal>=MIN_LOCAL);
+}
+updUI();
+
+function loop(ts){
+  if(!running){ last=ts; return; }
+  if(last===null) last=ts;
+  const dt=(ts-last)/1000; last=ts;
+  bal += EARN_RATE * dt;
+  localStorage.setItem('shag_local_bal', bal);
+  updUI();
+  requestAnimationFrame(loop);
+}
+
+startBtn.onclick = ()=>{ running=true; startBtn.disabled=true; stopBtn.disabled=false; requestAnimationFrame(loop); }
+stopBtn.onclick  = ()=>{ running=false; startBtn.disabled=false; stopBtn.disabled=true; };
+
+const faucetAbi = [{"inputs":[],"name":"claim","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
+async function connect(){
+  if(!window.ethereum){ alert("Відкрий у MetaMask або Trust Wallet."); return null; }
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send('eth_requestAccounts',[]);
+  const signer = provider.getSigner();
+  const addr = await signer.getAddress();
+  return { provider, signer, addr };
+}
+
+claimBtn.onclick = async ()=>{
+  if(bal < MIN_LOCAL){ return; }
+  if(FAUCET.startsWith("PASTE_")){ alert("Встав адресу faucet у код."); return; }
+  try{
+    const { signer, addr } = await connect();
+    if(!signer) return;
+    if(!confirm("Клейм 100 SHAG на "+addr+"?")) return;
+    const faucet = new ethers.Contract(FAUCET, faucetAbi, signer);
+    const tx = await faucet.claim();
+    await tx.wait();
+    bal = bal - 100;
+    localStorage.setItem('shag_local_bal', bal);
+    updUI();
+    alert("Отримано 100 SHAG! Перевір свій гаманець.");
+  }catch(e){
+    alert("Помилка клейму: "+(e?.message||e));
+  }
+};
+</script>
+</body>
+</html>
