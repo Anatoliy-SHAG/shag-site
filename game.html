@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Монополія‑lite: SHAG Edition</title>
+    <!-- Tailwind (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-50">
+    <div id="root"></div>
+
+    <!-- React 18 (UMD) + Babel для JSX у браузері -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Framer Motion (UMD) -->
+    <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
+
+    <script type="text/babel">
+      const { useMemo, useState } = React;
+      const { motion } = window['framer-motion'];
+
+      const START_CASH = 1500; // ШАГ
+      const PASS_START_REWARD = 200; // ШАГ
+      const JAIL_FINE = 100; // ШАГ
+
+      const TileType = {
+        START: 'START',
+        PROPERTY: 'PROPERTY',
+        CHANCE: 'CHANCE',
+        EVENT: 'EVENT',
+        JAIL: 'JAIL',
+        TAX: 'TAX',
+        EMPTY: 'EMPTY',
+      };
+
+      function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+      function App() {
+        const [playerCount, setPlayerCount] = useState(2);
+        const [started, setStarted] = useState(false);
+        const [log, setLog] = useState([]);
+        const [dice, setDice] = useState([1, 1]);
+
+        const tiles = useMemo(() => [
+          { id: 0, name: 'СТАРТ', type: TileType.START, color: '' },
+          { id: 1, name: 'Карбо‑лейн', type: TileType.PROPERTY, price: 60, rent: 20, color: 'bg-rose-200' },
+          { id: 2, name: 'Шанс', type: TileType.CHANCE, color: 'bg-amber-200' },
+          { id: 3, name: 'Шахтарська', type: TileType.PROPERTY, price: 60, rent: 20, color: 'bg-rose-200' },
+          { id: 4, name: 'Податок', type: TileType.TAX, tax: 100, color: 'bg-gray-200' },
+          { id: 5, name: 'Нода RPC', type: TileType.PROPERTY, price: 200, rent: 50, color: 'bg-blue-200' },
+          { id: 6, name: 'Соло‑майн', type: TileType.PROPERTY, price: 100, rent: 30, color: 'bg-emerald-200' },
+          { id: 7, name: 'Подія', type: TileType.EVENT, color: 'bg-amber-200' },
+          { id: 8, name: 'Блок‑Експлорер', type: TileType.PROPERTY, price: 120, rent: 40, color: 'bg-emerald-200' },
+          { id: 9, name: 'ТЮРМА', type: TileType.JAIL, color: 'bg-gray-100' },
+          { id: 10, name: 'Пул', type: TileType.PROPERTY, price: 140, rent: 50, color: 'bg-sky-200' },
+          { id: 11, name: 'API‑Шлюз', type: TileType.PROPERTY, price: 160, rent: 60, color: 'bg-sky-200' },
+          { id: 12, name: 'ДЦ / Хостинг', type: TileType.PROPERTY, price: 180, rent: 70, color: 'bg-violet-200' },
+          { id: 13, name: 'Шанс', type: TileType.CHANCE, color: 'bg-amber-200' },
+          { id: 14, name: 'Веб‑Гаманець', type: TileType.PROPERTY, price: 200, rent: 80, color: 'bg-violet-200' },
+          { id: 15, name: 'Банк', type: TileType.EMPTY, color: 'bg-gray-50' },
+          { id: 16, name: 'Маркетинг', type: TileType.PROPERTY, price: 220, rent: 90, color: 'bg-yellow-200' },
+          { id: 17, name: 'Подія', type: TileType.EVENT, color: 'bg-amber-200' },
+          { id: 18, name: 'Лістинг DEX', type: TileType.PROPERTY, price: 260, rent: 110, color: 'bg-yellow-200' },
+          { id: 19, name: 'Біржа CEX', type: TileType.PROPERTY, price: 300, rent: 130, color: 'bg-yellow-200' },
+        ], []);
+
+        const chanceDeck = useMemo(() => [
+          { text: 'Бонус майнера: +100 ШАГ', effect: (p) => (p.cash += 100) },
+          { text: 'Оплата за хостинг: −100 ШАГ', effect: (p) => (p.cash -= 100) },
+          { text: 'Airdrop SHAG: +200 ШАГ', effect: (p) => (p.cash += 200) },
+          { text: 'Баг у релізі: штраф −150 ШАГ', effect: (p) => (p.cash -= 150) },
+          { text: 'Піар‑пост злітає: +150 ШАГ', effect: (p) => (p.cash += 150) },
+          { text: 'Аудит смарт‑контракту: −200 ШАГ', effect: (p) => (p.cash -= 200) },
+        ], []);
+
+        const eventDeck = useMemo(() => [
+          { text: 'Йди на Старт і візьми винагороду', effect: (p, setPos) => setPos(0, true) },
+          { text: 'Йди в Тюрму (без проходження Старту)', effect: (p, setPos) => setPos(9, false) },
+          { text: 'Просунься на 3 клітинки', effect: (p, setPos, pos) => setPos((pos + 3) % tiles.length, (pos + 3) % tiles.length < pos) },
+          { text: 'Відкот релізу: відступи на 2', effect: (p, setPos, pos) => setPos((pos + tiles.length - 2) % tiles.length, false) },
+        ], [tiles.length]);
+
+        const [players, setPlayers] = useState([]);
+        const [ownership, setOwnership] = useState({});
+        const [positions, setPositions] = useState([]);
+        const [current, setCurrent] = useState(0);
+        const [bankrupt, setBankrupt] = useState({});
+
+        function appendLog(msg) { setLog((l) => [msg, ...l].slice(0, 200)); }
+
+        function startGame() {
+          const count = Math.max(2, Math.min(4, playerCount));
+          const ps = Array.from({ length: count }, (_, i) => ({
+            name: `Гравець ${i + 1}`,
+            cash: START_CASH,
+            inJail: false,
+            jailTurns: 0,
+          }));
+          setPlayers(ps);
+          setPositions(Array(count).fill(0));
+          setOwnership({});
+          setBankrupt({});
+          setCurrent(0);
+          setDice([1, 1]);
+          setStarted(true);
+          setLog(['Гру розпочато! Успіхів!']);
+        }
+
+        function movePlayer(pIndex, steps) {
+          setPositions((prev) => {
+            const newPos = [...prev];
+            const old = newPos[pIndex];
+            let next = (old + steps) % tiles.length;
+            const passedStart = old + steps >= tiles.length;
+            newPos[pIndex] = next;
+            if (passedStart) {
+              setPlayers((pl) => {
+                const copy = [...pl];
+                copy[pIndex] = { ...copy[pIndex], cash: copy[pIndex].cash + PASS_START_REWARD };
+                return copy;
+              });
+              appendLog(\`\${players[pIndex].name} проходить СТАРТ і отримує \${PASS_START_REWARD} ШАГ.\`);
+            }
+            return newPos;
+          });
+        }
+
+        function pay(payer, receiver, amount) {
+          setPlayers((pl) => {
+            const copy = [...pl];
+            if (amount <= 0) return copy;
+            copy[payer] = { ...copy[payer], cash: copy[payer].cash - amount };
+            if (receiver !== null) copy[receiver] = { ...copy[receiver], cash: copy[receiver].cash + amount };
+            return copy;
+          });
+        }
+
+        function handleLand(pIndex) {
+          const tileId = positions[pIndex];
+          const tile = tiles[tileId];
+          const p = players[pIndex];
+          if (!tile) return;
+
+          if (tile.type === TileType.START || tile.type === TileType.EMPTY) return;
+
+          if (tile.type === TileType.TAX) { pay(pIndex, null, tile.tax); appendLog(\`\${p.name} сплачує податок \${tile.tax} ШАГ.\`); return; }
+
+          if (tile.type === TileType.JAIL) {
+            setPlayers((pl) => { const copy = [...pl]; copy[pIndex] = { ...copy[pIndex], inJail: true, jailTurns: 2 }; return copy; });
+            appendLog(\`\${p.name} потрапляє до ТЮРМИ на 2 ходи.\`); return;
+          }
+
+          if (tile.type === TileType.CHANCE) {
+            const card = chanceDeck[randInt(0, chanceDeck.length - 1)];
+            setPlayers((pl) => { const copy = [...pl]; const me = { ...copy[pIndex] }; card.effect(me); copy[pIndex] = me; return copy; });
+            appendLog(\`\${p.name}: «\${card.text}»\`); return;
+          }
+
+          if (tile.type === TileType.EVENT) {
+            const card = eventDeck[randInt(0, eventDeck.length - 1)];
+            const setPos = (target, withStart) => {
+              setPositions((prev) => {
+                const arr = [...prev];
+                const old = arr[pIndex];
+                if (typeof target === 'function') target = target(old);
+                const passed = withStart === true;
+                arr[pIndex] = target;
+                if (passed) {
+                  setPlayers((pl) => { const copy = [...pl]; copy[pIndex] = { ...copy[pIndex], cash: copy[pIndex].cash + PASS_START_REWARD }; return copy; });
+                  appendLog(\`\${players[pIndex].name} отримує \${PASS_START_REWARD} ШАГ за прохід через СТАРТ.\`);
+                }
+                return arr;
+              });
+            };
+            card.effect(players[pIndex], setPos, positions[pIndex]);
+            appendLog(\`\${p.name}: «\${card.text}»\`); return;
+          }
+
+          if (tile.type === TileType.PROPERTY) {
+            const owner = ownership[tileId];
+            if (owner == null) {
+              if (p.cash >= tile.price) { setOwnership((o) => ({ ...o, [tileId]: pIndex })); pay(pIndex, null, tile.price); appendLog(\`\${p.name} купує «\${tile.name}» за \${tile.price} ШАГ.\`); }
+              else { appendLog(\`\${p.name} не має \${tile.price} ШАГ для купівлі «\${tile.name}».\`); }
+            } else if (owner !== pIndex) { pay(pIndex, owner, tile.rent); appendLog(\`\${p.name} сплачує ренту \${tile.rent} ШАГ гравцю \${players[owner].name} за «\${tile.name}».\`); }
+          }
+        }
+
+        function endTurnIfNeeded() {
+          players.forEach((pl, i) => {
+            if (!bankrupt[i] && pl.cash < -200) {
+              setBankrupt((b) => ({ ...b, [i]: true }));
+              setOwnership((o) => { const copy = { ...o }; Object.keys(copy).forEach((k) => { if (copy[k] === i) delete copy[k]; }); return copy; });
+              appendLog(\`\${pl.name} збанкрутував і вибуває з гри.\`);
+            }
+          });
+          const alive = players.filter((_, i) => !bankrupt[i]).length;
+          if (alive <= 1) { const winner = players.find((_, i) => !bankrupt[i]); if (winner) appendLog(\`Переможець: \${winner.name}!\`); }
+        }
+
+        function rollDiceAndMove() {
+          if (!started) return; if (players.filter((_, i) => !bankrupt[i]).length <= 1) return;
+          const i = current; const me = players[i];
+          if (bankrupt[i]) { setCurrent((c) => (c + 1) % players.length); return; }
+          if (me.inJail) {
+            if (me.jailTurns > 0) { setPlayers((pl) => { const copy = [...pl]; copy[i] = { ...copy[i], cash: copy[i].cash - JAIL_FINE, inJail: false, jailTurns: 0 }; return copy; }); appendLog(\`\${me.name} сплачує \${JAIL_FINE} ШАГ і виходить з ТЮРМИ.\`); }
+          } else {
+            const d1 = randInt(1, 6); const d2 = randInt(1, 6); setDice([d1, d2]); movePlayer(i, d1 + d2);
+          }
+          setTimeout(() => { handleLand(i); endTurnIfNeeded(); setCurrent((c) => (c + 1) % players.length); }, 250);
+        }
+
+        const btn = "rounded-xl px-4 py-2 bg-sky-600 text-white hover:bg-sky-700 active:scale-[0.98] transition";
+
+        return (
+          <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800 p-4 md:p-8">
+            <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-4">
+              <Card>
+                <h1 className="text-2xl font-bold">Монополія‑lite: SHAG Edition</h1>
+                {!started ? (
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <label className="text-sm">Кількість гравців (2–4)</label>
+                      <input type="number" min={2} max={4} value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))} className="mt-1 w-24 rounded-xl border p-2"/>
+                    </div>
+                    <button onClick={startGame} className={btn}>Почати гру</button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mt-4">
+                    <div className="flex items-center gap-3">
+                      <button onClick={rollDiceAndMove} className={btn + " flex-1"}>Кинути кубики</button>
+                      <div className="px-4 py-2 rounded-xl border bg-white text-center">
+                        <div className="text-xs">Кубики</div>
+                        <div className="text-xl font-semibold">{dice[0]} + {dice[1]}</div>
+                      </div>
+                    </div>
+                    <div className="text-sm">Хід: <span className="font-semibold">Гравець {current + 1}</span></div>
+                  </div>
+                )}
+              </Card>
+
+              <Card className="md:col-span-2">
+                <div className="grid grid-cols-5 gap-2">
+                  {tiles.map((t) => (
+                    <Tile key={t.id} tile={t} owners={ownership} players={players} positions={positions} />
+                  ))}
+                </div>
+              </Card>
+
+              <Card>
+                <h2 className="text-lg font-semibold mb-2">Гравці</h2>
+                <div className="space-y-2">
+                  {players.map((p, i) => (
+                    <div key={i} className={\`rounded-xl p-3 border bg-white \${i === current ? 'ring-2 ring-sky-400' : ''}\`}>
+                      <div className="flex justify-between items-center">
+                        <div className="font-semibold">{p.name}</div>
+                        <div className="text-sm">{p.cash} ШАГ</div>
+                      </div>
+                      <div className="text-xs opacity-70">Позиція: {positions[i] ?? 0} • {p.inJail ? \`Тюрма (\${p.jailTurns})\` : 'Вільний'} • {bankrupt[i] ? 'Банкрут' : 'Активний'}</div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="md:col-span-2">
+                <h2 className="text-lg font-semibold mb-2">Події</h2>
+                <div className="space-y-2 max-h-64 overflow-auto">
+                  {log.map((row, idx) => (
+                    <div key={idx} className="text-sm bg-white border rounded-xl p-2">{row}</div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </div>
+        );
+      }
+
+      function Tile({ tile, owners, players, positions }) {
+        const ownerIndex = owners[tile.id];
+        const ownerName = ownerIndex != null ? players[ownerIndex]?.name : null;
+        const herePlayers = positions.map((pos, i) => (pos === tile.id ? i : null)).filter((x) => x != null);
+        return (
+          <motion.div layout className={\`rounded-2xl p-2 border \${tile.color || 'bg-white'}\`}>
+            <div className="text-xs font-semibold truncate">{tile.name}</div>
+            {tile.type === 'PROPERTY' && (<div className="text-[10px] opacity-70">Ціна: {tile.price} ШАГ • Рента: {tile.rent} ШАГ</div>)}
+            {tile.type === 'TAX' && <div className="text-[10px] opacity-70">Податок: {tile.tax} ШАГ</div>}
+            {ownerName && <div className="text-[10px] mt-1">Власник: {ownerName}</div>}
+            <div className="mt-2 flex -space-x-1">
+              {herePlayers.map((i) => (
+                <div key={i} title={players[i]?.name} className={\`w-5 h-5 rounded-full border bg-white grid place-items-center text-[10px] font-semibold\`}>
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        );
+      }
+
+      function Card({ children, className = '' }) {
+        return <div className={\`rounded-2xl bg-white/80 backdrop-blur border shadow-sm p-4 \${className}\`}>{children}</div>;
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
