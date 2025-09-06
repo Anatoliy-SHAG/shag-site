@@ -17,9 +17,12 @@
     <!-- Framer Motion (UMD) -->
     <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
 
-    <script type="text/babel">
+    <!-- ВАЖЛИВО: додали data-presets="react", щоб Babel розумів JSX -->
+    <script type="text/babel" data-presets="react">
       const { useMemo, useState } = React;
-      const { motion } = window['framer-motion'];
+      // Сумісність з UMD-версією framer-motion
+      const fm = window['framer-motion'] || window.framerMotion || window.motion || {};
+      const { motion } = fm;
 
       const START_CASH = 1500; // ШАГ
       const PASS_START_REWARD = 200; // ШАГ
