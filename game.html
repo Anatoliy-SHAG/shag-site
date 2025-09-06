@@ -3,9 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Монополія‑lite: SHAG Edition</title>
+    <title>Монополія‑lite: SHAG Edition (Simple + Імена + Нова гра)</title>
     <!-- Tailwind (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .btn { border-radius: 0.75rem; padding: 0.5rem 1rem; background:#0369a1; color:#fff; transition: all .15s; }
+      .btn:hover { background:#075985; }
+      .btn:active { transform: scale(0.98); }
+      .btn-secondary { border-radius: 0.75rem; padding: 0.5rem 1rem; background:#334155; color:#fff; transition: all .15s; }
+      .btn-secondary:hover { background:#1f2937; }
+      .card { border-radius: 1rem; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.06); padding: 1rem; }
+      .pill { width: 20px; height: 20px; border-radius: 9999px; display: grid; place-items:center; font-size:10px; font-weight:600; background:#fff; border:1px solid #e5e7eb; }
+      .tile { border-radius: 0.75rem; border:1px solid #e5e7eb; padding: 0.5rem; }
+      .input { border:1px solid #e5e7eb; border-radius: 0.75rem; padding: 0.5rem 0.75rem; width: 100%; }
+      .label { font-size: 12px; color:#475569; }
+    </style>
   </head>
   <body class="min-h-screen bg-slate-50">
     <div id="root"></div>
@@ -14,34 +26,25 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Framer Motion (UMD) -->
-    <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
 
-    <!-- ВАЖЛИВО: додали data-presets="react", щоб Babel розумів JSX -->
+    <!-- ВАЖЛИВО: data-presets="react" для JSX -->
     <script type="text/babel" data-presets="react">
-      const { useMemo, useState } = React;
-      // Сумісність з UMD-версією framer-motion
-      const fm = window['framer-motion'] || window.framerMotion || window.motion || {};
-      const { motion } = fm;
+      const { useMemo, useState, useEffect } = React;
 
       const START_CASH = 1500; // ШАГ
       const PASS_START_REWARD = 200; // ШАГ
       const JAIL_FINE = 100; // ШАГ
 
       const TileType = {
-        START: 'START',
-        PROPERTY: 'PROPERTY',
-        CHANCE: 'CHANCE',
-        EVENT: 'EVENT',
-        JAIL: 'JAIL',
-        TAX: 'TAX',
-        EMPTY: 'EMPTY',
+        START: 'START', PROPERTY: 'PROPERTY', CHANCE: 'CHANCE', EVENT: 'EVENT',
+        JAIL: 'JAIL', TAX: 'TAX', EMPTY: 'EMPTY',
       };
 
-      function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+      const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
       function App() {
         const [playerCount, setPlayerCount] = useState(2);
+        const [playerNames, setPlayerNames] = useState(['Гравець 1', 'Гравець 2', 'Гравець 3', 'Гравець 4']);
         const [started, setStarted] = useState(false);
         const [log, setLog] = useState([]);
         const [dice, setDice] = useState([1, 1]);
@@ -91,12 +94,26 @@
         const [current, setCurrent] = useState(0);
         const [bankrupt, setBankrupt] = useState({});
 
-        function appendLog(msg) { setLog((l) => [msg, ...l].slice(0, 200)); }
+        const appendLog = (msg) => setLog((l) => [msg, ...l].slice(0, 200));
 
-        function startGame() {
+        const resetGame = () => {
+          setStarted(false);
+          setPlayers([]);
+          setOwnership({});
+          setPositions([]);
+          setCurrent(0);
+          setBankrupt({});
+          setLog([]);
+          setDice([1,1]);
+        };
+
+        // Динамічний список інпутів імен під кількість гравців
+        const nameInputs = Array.from({length: Math.max(2, Math.min(4, playerCount))}, (_,i)=>i);
+
+        const startGame = () => {
           const count = Math.max(2, Math.min(4, playerCount));
           const ps = Array.from({ length: count }, (_, i) => ({
-            name: `Гравець ${i + 1}`,
+            name: (playerNames[i] && playerNames[i].trim()) ? playerNames[i].trim() : `Гравець ${i + 1}`,
             cash: START_CASH,
             inJail: false,
             jailTurns: 0,
@@ -109,13 +126,13 @@
           setDice([1, 1]);
           setStarted(true);
           setLog(['Гру розпочато! Успіхів!']);
-        }
+        };
 
-        function movePlayer(pIndex, steps) {
+        const movePlayer = (pIndex, steps) => {
           setPositions((prev) => {
             const newPos = [...prev];
             const old = newPos[pIndex];
-            let next = (old + steps) % tiles.length;
+            const next = (old + steps) % tiles.length;
             const passedStart = old + steps >= tiles.length;
             newPos[pIndex] = next;
             if (passedStart) {
@@ -128,9 +145,9 @@
             }
             return newPos;
           });
-        }
+        };
 
-        function pay(payer, receiver, amount) {
+        const pay = (payer, receiver, amount) => {
           setPlayers((pl) => {
             const copy = [...pl];
             if (amount <= 0) return copy;
@@ -138,9 +155,9 @@
             if (receiver !== null) copy[receiver] = { ...copy[receiver], cash: copy[receiver].cash + amount };
             return copy;
           });
-        }
+        };
 
-        function handleLand(pIndex) {
+        const handleLand = (pIndex) => {
           const tileId = positions[pIndex];
           const tile = tiles[tileId];
           const p = players[pIndex];
@@ -188,9 +205,9 @@
               else { appendLog(\`\${p.name} не має \${tile.price} ШАГ для купівлі «\${tile.name}».\`); }
             } else if (owner !== pIndex) { pay(pIndex, owner, tile.rent); appendLog(\`\${p.name} сплачує ренту \${tile.rent} ШАГ гравцю \${players[owner].name} за «\${tile.name}».\`); }
           }
-        }
+        };
 
-        function endTurnIfNeeded() {
+        const endTurnIfNeeded = () => {
           players.forEach((pl, i) => {
             if (!bankrupt[i] && pl.cash < -200) {
               setBankrupt((b) => ({ ...b, [i]: true }));
@@ -200,39 +217,59 @@
           });
           const alive = players.filter((_, i) => !bankrupt[i]).length;
           if (alive <= 1) { const winner = players.find((_, i) => !bankrupt[i]); if (winner) appendLog(\`Переможець: \${winner.name}!\`); }
-        }
+        };
 
-        function rollDiceAndMove() {
+        const rollDiceAndMove = () => {
           if (!started) return; if (players.filter((_, i) => !bankrupt[i]).length <= 1) return;
           const i = current; const me = players[i];
           if (bankrupt[i]) { setCurrent((c) => (c + 1) % players.length); return; }
           if (me.inJail) {
             if (me.jailTurns > 0) { setPlayers((pl) => { const copy = [...pl]; copy[i] = { ...copy[i], cash: copy[i].cash - JAIL_FINE, inJail: false, jailTurns: 0 }; return copy; }); appendLog(\`\${me.name} сплачує \${JAIL_FINE} ШАГ і виходить з ТЮРМИ.\`); }
           } else {
-            const d1 = randInt(1, 6); const d2 = randInt(1, 6); setDice([d1, d2]); movePlayer(i, d1 + d2);
+            const d1 = randInt(1, 6), d2 = randInt(1, 6); setDice([d1, d2]); movePlayer(i, d1 + d2);
           }
           setTimeout(() => { handleLand(i); endTurnIfNeeded(); setCurrent((c) => (c + 1) % players.length); }, 250);
-        }
-
-        const btn = "rounded-xl px-4 py-2 bg-sky-600 text-white hover:bg-sky-700 active:scale-[0.98] transition";
+        };
 
         return (
           <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800 p-4 md:p-8">
             <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-4">
-              <Card>
-                <h1 className="text-2xl font-bold">Монополія‑lite: SHAG Edition</h1>
+              <div className="card">
+                <div className="flex items-center justify-between gap-3">
+                  <h1 className="text-2xl font-bold">Монополія‑lite: SHAG Edition</h1>
+                  {started && <button onClick={resetGame} className="btn-secondary">Нова гра</button>}
+                </div>
                 {!started ? (
                   <div className="space-y-4 mt-4">
                     <div>
-                      <label className="text-sm">Кількість гравців (2–4)</label>
-                      <input type="number" min={2} max={4} value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))} className="mt-1 w-24 rounded-xl border p-2"/>
+                      <label className="label">Кількість гравців (2–4)</label>
+                      <input type="number" min={2} max={4} value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))} className="mt-1 w-24 input"/>
                     </div>
-                    <button onClick={startGame} className={btn}>Почати гру</button>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {nameInputs.map((i) => (
+                        <div key={i}>
+                          <label className="label">Імʼя гравця {i+1}</label>
+                          <input
+                            type="text"
+                            className="input"
+                            value={playerNames[i] ?? `Гравець ${i+1}`}
+                            onChange={(e)=>{
+                              const arr = [...playerNames];
+                              arr[i] = e.target.value;
+                              setPlayerNames(arr);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <button onClick={startGame} className="btn w-full">Почати гру</button>
                   </div>
                 ) : (
                   <div className="space-y-3 mt-4">
                     <div className="flex items-center gap-3">
-                      <button onClick={rollDiceAndMove} className={btn + " flex-1"}>Кинути кубики</button>
+                      <button onClick={rollDiceAndMove} className="btn" style={{flex:1}}>Кинути кубики</button>
                       <div className="px-4 py-2 rounded-xl border bg-white text-center">
                         <div className="text-xs">Кубики</div>
                         <div className="text-xl font-semibold">{dice[0]} + {dice[1]}</div>
@@ -241,39 +278,39 @@
                     <div className="text-sm">Хід: <span className="font-semibold">Гравець {current + 1}</span></div>
                   </div>
                 )}
-              </Card>
+              </div>
 
-              <Card className="md:col-span-2">
+              <div className="card md:col-span-2">
                 <div className="grid grid-cols-5 gap-2">
                   {tiles.map((t) => (
                     <Tile key={t.id} tile={t} owners={ownership} players={players} positions={positions} />
                   ))}
                 </div>
-              </Card>
+              </div>
 
-              <Card>
+              <div className="card">
                 <h2 className="text-lg font-semibold mb-2">Гравці</h2>
                 <div className="space-y-2">
                   {players.map((p, i) => (
-                    <div key={i} className={\`rounded-xl p-3 border bg-white \${i === current ? 'ring-2 ring-sky-400' : ''}\`}>
+                    <div key={i} className={`rounded-xl p-3 border bg-white ${i === current ? 'ring-2 ring-sky-400' : ''}`}>
                       <div className="flex justify-between items-center">
                         <div className="font-semibold">{p.name}</div>
                         <div className="text-sm">{p.cash} ШАГ</div>
                       </div>
-                      <div className="text-xs opacity-70">Позиція: {positions[i] ?? 0} • {p.inJail ? \`Тюрма (\${p.jailTurns})\` : 'Вільний'} • {bankrupt[i] ? 'Банкрут' : 'Активний'}</div>
+                      <div className="text-xs opacity-70">Позиція: {positions[i] ?? 0} • {p.inJail ? `Тюрма (${p.jailTurns})` : 'Вільний'} • {bankrupt[i] ? 'Банкрут' : 'Активний'}</div>
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
 
-              <Card className="md:col-span-2">
+              <div className="card md:col-span-2">
                 <h2 className="text-lg font-semibold mb-2">Події</h2>
                 <div className="space-y-2 max-h-64 overflow-auto">
                   {log.map((row, idx) => (
                     <div key={idx} className="text-sm bg-white border rounded-xl p-2">{row}</div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </div>
           </div>
         );
@@ -284,24 +321,16 @@
         const ownerName = ownerIndex != null ? players[ownerIndex]?.name : null;
         const herePlayers = positions.map((pos, i) => (pos === tile.id ? i : null)).filter((x) => x != null);
         return (
-          <motion.div layout className={\`rounded-2xl p-2 border \${tile.color || 'bg-white'}\`}>
+          <div className={`tile ${tile.color || 'bg-white'}`}>
             <div className="text-xs font-semibold truncate">{tile.name}</div>
             {tile.type === 'PROPERTY' && (<div className="text-[10px] opacity-70">Ціна: {tile.price} ШАГ • Рента: {tile.rent} ШАГ</div>)}
             {tile.type === 'TAX' && <div className="text-[10px] opacity-70">Податок: {tile.tax} ШАГ</div>}
             {ownerName && <div className="text-[10px] mt-1">Власник: {ownerName}</div>}
             <div className="mt-2 flex -space-x-1">
-              {herePlayers.map((i) => (
-                <div key={i} title={players[i]?.name} className={\`w-5 h-5 rounded-full border bg-white grid place-items-center text-[10px] font-semibold\`}>
-                  {i + 1}
-                </div>
-              ))}
+              {herePlayers.map((i) => (<div key={i} title={players[i]?.name} className="pill">{i + 1}</div>))}
             </div>
-          </motion.div>
+          </div>
         );
-      }
-
-      function Card({ children, className = '' }) {
-        return <div className={\`rounded-2xl bg-white/80 backdrop-blur border shadow-sm p-4 \${className}\`}>{children}</div>;
       }
 
       const root = ReactDOM.createRoot(document.getElementById('root'));
