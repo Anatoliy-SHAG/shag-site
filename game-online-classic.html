@@ -61,7 +61,7 @@
       </div>
     </div>
 
-    <!-- Квадрат 11x11: периметр — тайли, всередині — панель/лобі -->
+    <!-- Квадрат 11x11 -->
     <div class="relative grid grid-cols-11 grid-rows-11 gap-1 md:gap-1.5">
       <!-- Центр (лобі + панель гри) -->
       <div class="card col-start-2 col-end-12 row-start-2 row-end-12 flex flex-col gap-3">
@@ -141,30 +141,38 @@
   /* ===== Іконки ===== */
   document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
 
-  /* ===== Firebase Init ===== */
+  /* ===== Firebase Init (твій config) ===== */
   const firebaseConfig = {
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyAlTdDAheHUUB7FdA-4K7K1lt2sZt8FLBg",
-  authDomain: "shag-monopoli.firebaseapp.com",
-  databaseURL: "https://shag-monopoli-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "shag-monopoli",
-  storageBucket: "shag-monopoli.firebasestorage.app",
-  messagingSenderId: "471245762028",
-  appId: "1:471245762028:web:bbb0ca1237521f01afa4c9"
-};
-
+    apiKey: "AIzaSyA1TdAheHUUB7FdA-4K7K1lt2sZt8FLBg",
+    authDomain: "shag-monopoli.firebaseapp.com",
+    databaseURL: "https://shag-monopoli-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "shag-monopoli",
+    storageBucket: "shag-monopoli.appspot.com",
+    messagingSenderId: "471245762028",
+    appId: "1:471245762028:web:bb0ca1237521f01afa4c9"
+  };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
   let UID = null;
+  // перший вхід (може бути асинхронно)
   firebase.auth().signInAnonymously().then(() => {
     UID = firebase.auth().currentUser.uid;
-    document.getElementById('uidInfo').textContent = UID;
   });
+
+  // гарантуємо авторизацію перед діями
+  async function ensureAuth() {
+    try {
+      if (!firebase.auth().currentUser) {
+        await firebase.auth().signInAnonymously();
+      }
+      UID = firebase.auth().currentUser.uid;
+      return true;
+    } catch (e) {
+      alert('Auth error: ' + (e?.message || e));
+      return false;
+    }
+  }
 
   /* ===== Константи/утиліти ===== */
   const START_CASH = 1500, PASS_START_REWARD = 200, JAIL_FINE = 100;
@@ -179,10 +187,7 @@ const firebaseConfig = {
     return `<div class="pill" style="background:${bg}">${init}</div>`;
   }
 
-  /* ===== Геометрія класичної дошки =====
-     11x11 ⇒ периметр = 11*4 - 4 = 40 клітинок.
-     Нумерація по периметру (n=0..39): старт з НИЖНЬОГО ЛІВОГО кута, далі вправо → вгору → вліво → вниз.
-  */
+  /* ===== Геометрія класичної дошки ===== */
   const SIZE = 11;
   const PERIM = SIZE*4 - 4; // 40
   function perimCoord(n){
@@ -190,13 +195,12 @@ const firebaseConfig = {
     const s = SIZE, last = s-1;
     if (n < s)                 return { r:last, c:n };                          // низ: 0..10
     if (n < s+(s-1))           return { r:last-(n-s+1), c:last };               // право: 1..10
-    if (n < s+(s-1)*2)         return { r:0, c:last-(n-(s+(s-1))+1) };          // верх: 1..10 (→ліворуч)
+    if (n < s+(s-1)*2)         return { r:0, c:last-(n-(s+(s-1))+1) };          // верх: 1..10
     return { r:n-(s+(s-1)*2), c:0 };                                            // ліво: 1..9
   }
 
   /* ===== Тайли (40 штук) ===== */
   const tiles = [
-    // 0..39, ключові кути: 0 START, 10 JAIL, 20 Відпочинок, 30 Go To Jail
     { id:0,  name:'СТАРТ', type:TileType.START, color:'bg-white' },
     { id:1,  name:'Карбо-лейн', type:TileType.PROPERTY, price:60,  rent:20, color:'bg-rose-200' },
     { id:2,  name:'Шанс',       type:TileType.CHANCE,   color:'bg-amber-200' },
@@ -220,7 +224,7 @@ const firebaseConfig = {
     { id:18, name:'Біржа CEX',  type:TileType.PROPERTY, price:320, rent:130, color:'bg-yellow-200' },
     { id:19, name:'Ліцензії',   type:TileType.TAX,      tax:150,   color:'bg-gray-200' },
 
-    { id:20, name:'Відпочинок', type:TileType.EMPTY,    color:'bg-white' },   // аналог Free Parking
+    { id:20, name:'Відпочинок', type:TileType.EMPTY,    color:'bg-white' },
 
     { id:21, name:'Сервера',    type:TileType.PROPERTY, price:340, rent:140, color:'bg-blue-100' },
     { id:22, name:'UX-редизайн',type:TileType.PROPERTY, price:360, rent:160, color:'bg-pink-200' },
@@ -232,7 +236,7 @@ const firebaseConfig = {
     { id:28, name:'Партнерство',type:TileType.PROPERTY, price:420, rent:200, color:'bg-green-200' },
     { id:29, name:'Data Lake',  type:TileType.PROPERTY, price:440, rent:220, color:'bg-cyan-200' },
 
-    { id:30, name:'У ТЮРМУ!',   type:TileType.EVENT,    color:'bg-gray-100' }, // Go To Jail
+    { id:30, name:'У ТЮРМУ!',   type:TileType.EVENT,    color:'bg-gray-100' },
 
     { id:31, name:'ЗП Dev',     type:TileType.PROPERTY, price:460, rent:230, color:'bg-purple-200' },
     { id:32, name:'Акселератор',type:TileType.PROPERTY, price:480, rent:240, color:'bg-amber-100' },
@@ -302,7 +306,6 @@ const firebaseConfig = {
       perimeter.appendChild(d);
     }
 
-    // власники
     if(room){
       const ownership = room.ownership || {};
       Object.entries(ownership).forEach(([tileId, ownerUid])=>{
@@ -312,7 +315,6 @@ const firebaseConfig = {
         el.textContent = ownerUid ? `Власник: ${name}` : '';
       });
 
-      // фішки
       const players = room.players || {};
       const orderKeys = (room.state && room.state.order) || Object.keys(players);
       orderKeys.forEach((uid, idx)=>{
@@ -385,6 +387,8 @@ const firebaseConfig = {
   function roomRef(path='') { return db.ref(`rooms/${ROOM_ID}${path}`); }
 
   async function createRoom() {
+    if (!(await ensureAuth())) return;
+
     ROOM_ID = (roomIdEl.value || '').trim();
     const name = (playerNameEl.value||'Гравець').trim() || 'Гравець';
     if(!ROOM_ID) return alert('Введи код кімнати');
@@ -395,15 +399,26 @@ const firebaseConfig = {
       ownership: {},
       log: {}
     };
-    await db.ref(`rooms/${ROOM_ID}`).set(base);
-    await joinRoomInternal(name);
+    try {
+      await db.ref(`rooms/${ROOM_ID}`).set(base);
+      await joinRoomInternal(name);
+    } catch (e) {
+      alert('DB write error: ' + (e?.message || e));
+    }
   }
 
   async function joinRoom() {
+    if (!(await ensureAuth())) return;
+
     ROOM_ID = (roomIdEl.value || '').trim();
     const name = (playerNameEl.value||'Гравець').trim() || 'Гравець';
     if(!ROOM_ID) return alert('Введи код кімнати');
-    await joinRoomInternal(name);
+
+    try {
+      await joinRoomInternal(name);
+    } catch (e) {
+      alert('Join error: ' + (e?.message || e));
+    }
   }
 
   async function joinRoomInternal(name) {
@@ -457,9 +472,8 @@ const firebaseConfig = {
     return `«Шанс»: ${card.text}`;
   }
   function applyEvent(room, uid) {
-    // особливий випадок: клітинка 30 = "У ТЮРМУ!"
-    if ((room.players[uid].pos||0) === 30) {
-      room.players[uid].pos = 10; // тюрма
+    if ((room.players[uid].pos||0) === 30) { // Go To Jail
+      room.players[uid].pos = 10;
       room.players[uid].inJail = true;
       room.players[uid].jailTurns = 2;
       return `Подія: «Йди в тюрму» (перенесено на клітинку 10).`;
@@ -477,7 +491,6 @@ const firebaseConfig = {
   }
 
   async function rollDiceOnline() {
-    // анімація кубиків
     diceWrap.classList.remove('shake'); void diceWrap.offsetWidth; diceWrap.classList.add('shake');
 
     const s = await roomRef().get();
@@ -492,17 +505,14 @@ const firebaseConfig = {
       const players = data.players || {};
       const me = players[UID]; if(!me || me.bankrupt) return data;
 
-      // кубики
       data.state.dice = [d1, d2];
 
-      // рух
       const old = me.pos || 0;
       const next = (old + steps) % tiles.length;
       const passedStart = old + steps >= tiles.length;
       me.pos = next;
       if (passedStart) { me.cash = (me.cash||0) + PASS_START_REWARD; }
 
-      // ефекти
       const tile = tiles[next];
       let logMsg = `${me.name||UID} кидає ${d1}+${d2} та стає на «${tile.name}». `;
 
@@ -529,14 +539,12 @@ const firebaseConfig = {
         }
       }
 
-      // банкрутство
       if ((me.cash||0) < -200) {
         me.bankrupt = true;
         Object.keys(data.ownership||{}).forEach(k => { if (data.ownership[k]===UID) delete data.ownership[k]; });
         logMsg += ` ${me.name||UID} банкрут і вибуває.`;
       }
 
-      // наступний хід
       const order = data.state.order || Object.keys(players);
       if (!order.length) return data;
       const idx = order.indexOf(UID);
@@ -544,7 +552,6 @@ const firebaseConfig = {
       data.state.current = nextIdx;
       data.state.turnOwner = order[nextIdx];
 
-      // лог
       const entryKey = db.ref().push().key;
       data.log = data.log || {};
       data.log[entryKey] = { t: Date.now(), msg: logMsg };
@@ -577,7 +584,7 @@ const firebaseConfig = {
 
   /* ===== Перший рендер порожньої дошки ===== */
   (function initBoardOnce(){
-    renderPerimeter(null); // без гравців/власників
+    renderPerimeter(null);
     if (window.lucide) lucide.createIcons();
   })();
   </script>
