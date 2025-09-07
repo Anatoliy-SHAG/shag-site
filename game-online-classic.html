@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SHAG Monopoly Online — Classic Board</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Шрифт -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Іконки -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    :root{
+      --acc:#0ea5e9;
+      --panel: rgba(255,255,255,.88);
+      --border:#e5e7eb;
+    }
+    .btn{border-radius:.75rem;padding:.55rem 1rem;background:var(--acc);color:#fff;transition:.15s}
+    .btn:hover{filter:brightness(.95)} .btn:active{transform:scale(.98)}
+    .btn-secondary{border-radius:.75rem;padding:.55rem 1rem;background:#334155;color:#fff;transition:.15s}
+    .btn-secondary:hover{filter:brightness(.95)}
+    .card{border-radius:1rem;background:var(--panel);backdrop-filter:blur(6px);
+          border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,.06);padding:1rem}
+    .tile{border-radius:.75rem;border:1px solid var(--border);padding:.45rem}
+    .mini{font-size:11px;opacity:.75}
+    .pill{width:22px;height:22px;border-radius:9999px;display:grid;place-items:center;
+          font-size:12px;font-weight:700;color:#fff;border:none}
+
+    /* Анімація кубиків */
+    .shake { animation: shake .45s ease; }
+    @keyframes shake {
+      0%{transform:translate(0,0) rotate(0)}
+      25%{transform:translate(1px,-1px) rotate(-2deg)}
+      50%{transform:translate(-1px,1px) rotate(2deg)}
+      75%{transform:translate(1px,0) rotate(-1deg)}
+      100%{transform:translate(0,0) rotate(0)}
+    }
+
+    /* Мобільний UX */
+    @media (max-width: 520px){
+      .btn,.btn-secondary{ padding:.7rem 1.05rem; font-size:1rem; }
+      .card{ padding:.85rem; }
+      .tile{ padding:.35rem; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800">
+  <div class="max-w-6xl mx-auto p-3 md:p-6">
+
+    <!-- Заголовок -->
+    <div class="card mb-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <i data-lucide="shield" class="w-6 h-6 text-sky-500"></i>
+        <h1 class="text-2xl font-bold">Монополія-lite: <span class="text-sky-600">SHAG</span> — Онлайн (Класична дошка)</h1>
+      </div>
+    </div>
+
+    <!-- Квадрат 11x11: периметр — тайли, всередині — панель/лобі -->
+    <div class="relative grid grid-cols-11 grid-rows-11 gap-1 md:gap-1.5">
+      <!-- Центр (лобі + панель гри) -->
+      <div class="card col-start-2 col-end-12 row-start-2 row-end-12 flex flex-col gap-3">
+        <!-- Лобі -->
+        <div id="lobby" class="grid md:grid-cols-3 gap-3">
+          <div>
+            <label class="mini block mb-1">Код кімнати (лат/цифри)</label>
+            <input id="roomId" class="w-full border rounded-xl p-2" placeholder="SHAG123">
+          </div>
+          <div>
+            <label class="mini block mb-1">Твоє імʼя</label>
+            <input id="playerName" class="w-full border rounded-xl p-2" placeholder="Анатолій">
+          </div>
+          <div class="flex gap-2 items-end">
+            <button id="btnCreate" class="btn flex-1"><i data-lucide="plus" class="w-4 h-4 mr-1"></i>Створити</button>
+            <button id="btnJoin" class="btn-secondary flex-1"><i data-lucide="log-in" class="w-4 h-4 mr-1"></i>Приєднатись</button>
+          </div>
+          <div class="md:col-span-3 mini opacity-70">
+            Створи або приєднайся, потім «Почати гру». Хід робить лише гравець, чий UID у полі «Хід».
+          </div>
+        </div>
+
+        <!-- Панель гри -->
+        <div id="panel" class="hidden">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="mini">Кімната: <span id="roomInfo" class="font-semibold">—</span></div>
+            <div class="mini">Твій UID: <span id="uidInfo" class="font-semibold break-all">—</span></div>
+            <div class="mini">Хід (UID): <span id="turnOwnerInfo" class="font-semibold break-all">—</span></div>
+            <div class="mini">Порядок: <span id="orderInfo" class="font-semibold break-all">—</span></div>
+            <div class="flex-1"></div>
+            <button id="btnStartGame" class="btn"><i data-lucide="play" class="w-4 h-4 mr-1"></i>Почати гру</button>
+            <button id="btnReset" class="btn-secondary"><i data-lucide="rotate-ccw" class="w-4 h-4 mr-1"></i>Нова гра</button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            <div class="card">
+              <div class="flex items-center gap-2">
+                <button id="btnRoll" class="btn flex-1">
+                  <i data-lucide="dice-6" class="w-4 h-4 mr-1"></i>Кинути кубики
+                </button>
+                <div id="diceWrap" class="px-4 py-2 rounded-xl border bg-white text-center">
+                  <div class="mini">Кубики</div>
+                  <div id="diceBox" class="text-xl font-semibold">— + —</div>
+                </div>
+              </div>
+              <div class="text-sm mt-2">Хід: <span id="turnBox" class="font-semibold">—</span></div>
+            </div>
+
+            <div class="card">
+              <h2 class="font-semibold mb-1 flex items-center gap-1">
+                <i data-lucide="users" class="w-4 h-4"></i>Гравці
+              </h2>
+              <div id="playersBox" class="space-y-2"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="font-semibold mb-1 flex items-center gap-1">
+                <i data-lucide="megaphone" class="w-4 h-4"></i>Події
+              </h2>
+              <div id="logBox" class="space-y-2 max-h-56 overflow-auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Периметрні клітинки -->
+      <div id="perimeter" class="contents"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script>
+  /* ===== Іконки ===== */
+  document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
+
+  /* ===== Firebase Init ===== */
+  const firebaseConfig = {
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAlTdDAheHUUB7FdA-4K7K1lt2sZt8FLBg",
+  authDomain: "shag-monopoli.firebaseapp.com",
+  databaseURL: "https://shag-monopoli-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "shag-monopoli",
+  storageBucket: "shag-monopoli.firebasestorage.app",
+  messagingSenderId: "471245762028",
+  appId: "1:471245762028:web:bbb0ca1237521f01afa4c9"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let UID = null;
+  firebase.auth().signInAnonymously().then(() => {
+    UID = firebase.auth().currentUser.uid;
+    document.getElementById('uidInfo').textContent = UID;
+  });
+
+  /* ===== Константи/утиліти ===== */
+  const START_CASH = 1500, PASS_START_REWARD = 200, JAIL_FINE = 100;
+  const TileType = { START:'START', PROPERTY:'PROPERTY', CHANCE:'CHANCE', EVENT:'EVENT', JAIL:'JAIL', TAX:'TAX', EMPTY:'EMPTY' };
+  const randInt = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+  // Кольори фішок та бейджі
+  const COLORS = ['#06b6d4','#8b5cf6','#f59e0b','#ef4444','#22c55e','#e11d48','#0ea5e9','#14b8a6'];
+  function playerBadge(name, idx){
+    const init = (name||('G'+(idx+1))).trim().charAt(0).toUpperCase();
+    const bg = COLORS[idx % COLORS.length];
+    return `<div class="pill" style="background:${bg}">${init}</div>`;
+  }
+
+  /* ===== Геометрія класичної дошки =====
+     11x11 ⇒ периметр = 11*4 - 4 = 40 клітинок.
+     Нумерація по периметру (n=0..39): старт з НИЖНЬОГО ЛІВОГО кута, далі вправо → вгору → вліво → вниз.
+  */
+  const SIZE = 11;
+  const PERIM = SIZE*4 - 4; // 40
+  function perimCoord(n){
+    n = ((n%PERIM)+PERIM)%PERIM;
+    const s = SIZE, last = s-1;
+    if (n < s)                 return { r:last, c:n };                          // низ: 0..10
+    if (n < s+(s-1))           return { r:last-(n-s+1), c:last };               // право: 1..10
+    if (n < s+(s-1)*2)         return { r:0, c:last-(n-(s+(s-1))+1) };          // верх: 1..10 (→ліворуч)
+    return { r:n-(s+(s-1)*2), c:0 };                                            // ліво: 1..9
+  }
+
+  /* ===== Тайли (40 штук) ===== */
+  const tiles = [
+    // 0..39, ключові кути: 0 START, 10 JAIL, 20 Відпочинок, 30 Go To Jail
+    { id:0,  name:'СТАРТ', type:TileType.START, color:'bg-white' },
+    { id:1,  name:'Карбо-лейн', type:TileType.PROPERTY, price:60,  rent:20, color:'bg-rose-200' },
+    { id:2,  name:'Шанс',       type:TileType.CHANCE,   color:'bg-amber-200' },
+    { id:3,  name:'Шахтарська', type:TileType.PROPERTY, price:80,  rent:30, color:'bg-rose-200' },
+    { id:4,  name:'Податок',    type:TileType.TAX,      tax:100,   color:'bg-gray-200' },
+    { id:5,  name:'Нода RPC',   type:TileType.PROPERTY, price:120, rent:40, color:'bg-blue-200' },
+    { id:6,  name:'Соло-майн',  type:TileType.PROPERTY, price:140, rent:45, color:'bg-emerald-200' },
+    { id:7,  name:'Подія',      type:TileType.EVENT,    color:'bg-amber-200' },
+    { id:8,  name:'Експлорер',  type:TileType.PROPERTY, price:160, rent:55, color:'bg-emerald-200' },
+    { id:9,  name:'Веб-Гаманець', type:TileType.PROPERTY, price:180, rent:65, color:'bg-violet-200' },
+
+    { id:10, name:'ТЮРМА',      type:TileType.JAIL,     color:'bg-gray-100' },
+
+    { id:11, name:'Пул',        type:TileType.PROPERTY, price:200, rent:70, color:'bg-sky-200' },
+    { id:12, name:'API-Шлюз',   type:TileType.PROPERTY, price:220, rent:80, color:'bg-sky-200' },
+    { id:13, name:'Шанс',       type:TileType.CHANCE,   color:'bg-amber-200' },
+    { id:14, name:'Хостинг',    type:TileType.PROPERTY, price:240, rent:90, color:'bg-violet-200' },
+    { id:15, name:'Маркетинг',  type:TileType.PROPERTY, price:260, rent:95, color:'bg-yellow-200' },
+    { id:16, name:'Подія',      type:TileType.EVENT,    color:'bg-amber-200' },
+    { id:17, name:'Лістинг DEX',type:TileType.PROPERTY, price:280, rent:110, color:'bg-yellow-200' },
+    { id:18, name:'Біржа CEX',  type:TileType.PROPERTY, price:320, rent:130, color:'bg-yellow-200' },
+    { id:19, name:'Ліцензії',   type:TileType.TAX,      tax:150,   color:'bg-gray-200' },
+
+    { id:20, name:'Відпочинок', type:TileType.EMPTY,    color:'bg-white' },   // аналог Free Parking
+
+    { id:21, name:'Сервера',    type:TileType.PROPERTY, price:340, rent:140, color:'bg-blue-100' },
+    { id:22, name:'UX-редизайн',type:TileType.PROPERTY, price:360, rent:160, color:'bg-pink-200' },
+    { id:23, name:'Шанс',       type:TileType.CHANCE,   color:'bg-amber-200' },
+    { id:24, name:'Рекламна сітка', type:TileType.PROPERTY, price:380, rent:170, color:'bg-pink-200' },
+    { id:25, name:'Подія',      type:TileType.EVENT,    color:'bg-amber-200' },
+    { id:26, name:'CDN/Edge',   type:TileType.PROPERTY, price:400, rent:190, color:'bg-indigo-200' },
+    { id:27, name:'Аудит',      type:TileType.TAX,      tax:200,   color:'bg-gray-200' },
+    { id:28, name:'Партнерство',type:TileType.PROPERTY, price:420, rent:200, color:'bg-green-200' },
+    { id:29, name:'Data Lake',  type:TileType.PROPERTY, price:440, rent:220, color:'bg-cyan-200' },
+
+    { id:30, name:'У ТЮРМУ!',   type:TileType.EVENT,    color:'bg-gray-100' }, // Go To Jail
+
+    { id:31, name:'ЗП Dev',     type:TileType.PROPERTY, price:460, rent:230, color:'bg-purple-200' },
+    { id:32, name:'Акселератор',type:TileType.PROPERTY, price:480, rent:240, color:'bg-amber-100' },
+    { id:33, name:'Шанс',       type:TileType.CHANCE,   color:'bg-amber-200' },
+    { id:34, name:'А/Б Тести',  type:TileType.PROPERTY, price:500, rent:260, color:'bg-lime-200' },
+    { id:35, name:'Подія',      type:TileType.EVENT,    color:'bg-amber-200' },
+    { id:36, name:'Інтеграції', type:TileType.PROPERTY, price:520, rent:270, color:'bg-teal-200' },
+    { id:37, name:'Оптимізація',type:TileType.PROPERTY, price:540, rent:290, color:'bg-rose-100' },
+    { id:38, name:'Податок',    type:TileType.TAX,      tax:250,   color:'bg-gray-200' },
+    { id:39, name:'Фініш/СТАРТ',type:TileType.START,    color:'bg-white' },
+  ];
+
+  const chanceDeck = [
+    { text:'Бонус майнера: +100 ШАГ',      effect:(p)=>p.cash+=100 },
+    { text:'Оплата за хостинг: −100 ШАГ',  effect:(p)=>p.cash-=100 },
+    { text:'Airdrop SHAG: +200 ШАГ',       effect:(p)=>p.cash+=200 },
+    { text:'Піар-пост злітає: +150 ШАГ',   effect:(p)=>p.cash+=150 },
+    { text:'Аудит смарт-контракту: −200',  effect:(p)=>p.cash-=200 },
+  ];
+  const eventDeck = [
+    { text:'Йди на Старт і візьми винагороду', effect:(p,setPos)=>setPos(0,true) },
+    { text:'Йди в Тюрму (без проходження Старту)', effect:(p,setPos)=>setPos(10,false) },
+    { text:'Просунься на 3 клітинки', effect:(p,setPos,pos)=>setPos((pos+3)%tiles.length, (pos+3)%tiles.length<pos) },
+    { text:'Відкот релізу: відступи на 2', effect:(p,setPos,pos)=>setPos((pos+tiles.length-2)%tiles.length,false) },
+  ];
+
+  /* ===== DOM ===== */
+  const perimeter = document.getElementById('perimeter');
+  const lobby = document.getElementById('lobby');
+  const panel = document.getElementById('panel');
+  const roomIdEl = document.getElementById('roomId');
+  const playerNameEl = document.getElementById('playerName');
+  const btnCreate = document.getElementById('btnCreate');
+  const btnJoin   = document.getElementById('btnJoin');
+  const roomInfo = document.getElementById('roomInfo');
+  const uidInfo  = document.getElementById('uidInfo');
+  const turnOwnerInfo = document.getElementById('turnOwnerInfo');
+  const orderInfo = document.getElementById('orderInfo');
+  const btnStartGame = document.getElementById('btnStartGame');
+  const btnReset = document.getElementById('btnReset');
+  const btnRoll = document.getElementById('btnRoll');
+  const diceWrap = document.getElementById('diceWrap');
+  const diceBox = document.getElementById('diceBox');
+  const turnBox = document.getElementById('turnBox');
+  const playersBox = document.getElementById('playersBox');
+  const logBox = document.getElementById('logBox');
+
+  /* ===== Рендер периметра ===== */
+  function renderPerimeter(room){
+    perimeter.innerHTML = '';
+    for(let i=0;i<PERIM;i++){
+      const t = tiles[i];
+      const {r,c} = perimCoord(i);
+      const d = document.createElement('div');
+      d.style.gridRowStart = r+1;
+      d.style.gridColumnStart = c+1;
+      d.className = `tile ${t.color||'bg-white'}`;
+      d.innerHTML = `
+        <div class="text-[11px] font-semibold leading-4 truncate flex items-center gap-1">
+          ${iconForTile(t)} <span>${t.name}</span>
+        </div>
+        ${t.type==='PROPERTY' ? `<div class="mini">Ціна: ${t.price} • Рента: ${t.rent}</div>` : ''}
+        ${t.type==='TAX' ? `<div class="mini">Податок: ${t.tax}</div>` : ''}
+        <div class="flex -space-x-1 mt-1" data-here="${i}"></div>
+        <div class="mini opacity-60" data-owner="${i}"></div>
+      `;
+      perimeter.appendChild(d);
+    }
+
+    // власники
+    if(room){
+      const ownership = room.ownership || {};
+      Object.entries(ownership).forEach(([tileId, ownerUid])=>{
+        const el = perimeter.querySelector(`[data-owner="${tileId}"]`);
+        if(!el) return;
+        const name = room.players && room.players[ownerUid] ? room.players[ownerUid].name : ownerUid;
+        el.textContent = ownerUid ? `Власник: ${name}` : '';
+      });
+
+      // фішки
+      const players = room.players || {};
+      const orderKeys = (room.state && room.state.order) || Object.keys(players);
+      orderKeys.forEach((uid, idx)=>{
+        const p = players[uid]; if(!p) return;
+        const pos = (p.pos||0) % tiles.length;
+        const slot = perimeter.querySelector(`[data-here="${pos}"]`);
+        if(slot){ slot.insertAdjacentHTML('beforeend', playerBadge(p.name, idx)); }
+      });
+    }
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function iconForTile(t){
+    const map = {
+      START:'rocket', PROPERTY:'building-2', CHANCE:'help-circle', EVENT:'sparkles',
+      JAIL:'gavel', TAX:'dollar-sign', EMPTY:'coffee'
+    };
+    const name = map[t.type] || 'square';
+    return `<i data-lucide="${name}" class="w-3.5 h-3.5 opacity-70"></i>`;
+  }
+
+  function renderPlayers(room) {
+    playersBox.innerHTML='';
+    const players = room.players || {};
+    const order = (room.state && room.state.order) || Object.keys(players);
+    order.forEach((uid, idx)=>{
+      const p = players[uid]; if(!p) return;
+      const isTurn = room.state && room.state.turnOwner === uid;
+      const row=document.createElement('div');
+      row.className='rounded-xl p-3 border bg-white '+(isTurn?'ring-2 ring-sky-400':'');
+      row.innerHTML = `
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            ${playerBadge(p.name, idx)}
+            <div class="font-semibold">${p.name||uid}</div>
+          </div>
+          <div class="text-sm">${p.cash ?? 0} ШАГ</div>
+        </div>
+        <div class="text-xs opacity-70 mt-1">
+          Позиція: ${p.pos ?? 0} • ${p.inJail?`Тюрма (${p.jailTurns||0})`:'Вільний'} • ${p.bankrupt?'Банкрут':'Активний'}
+          • ${p.connected?'🟢 онлайн':'⚫ офлайн'}
+        </div>
+      `;
+      playersBox.appendChild(row);
+    });
+  }
+
+  function renderLog(room) {
+    const log = room.log || {};
+    const entries = Object.values(log);
+    entries.sort((a,b)=> (a.t||0) < (b.t||0) ? 1 : -1);
+    logBox.innerHTML = entries.slice(0,120).map(e=>(
+      `<div class="text-sm bg-white border rounded-xl p-2">${e.msg}</div>`
+    )).join('');
+  }
+
+  function updateHUD(room) {
+    if(!room || !room.state) return;
+    diceBox.textContent = (room.state.dice||[1,1]).join(' + ');
+    const players = room.players || {};
+    const myName = players[UID]?.name || UID;
+    turnBox.textContent = myName;
+    turnOwnerInfo.textContent = room.state.turnOwner || '—';
+    orderInfo.textContent = (room.state.order||[]).join(', ');
+  }
+
+  /* ===== Онлайн логіка (Firebase) ===== */
+  let ROOM_ID = null;
+  function roomRef(path='') { return db.ref(`rooms/${ROOM_ID}${path}`); }
+
+  async function createRoom() {
+    ROOM_ID = (roomIdEl.value || '').trim();
+    const name = (playerNameEl.value||'Гравець').trim() || 'Гравець';
+    if(!ROOM_ID) return alert('Введи код кімнати');
+
+    const base = {
+      state: { started:false, current:0, turnOwner:null, dice:[1,1], order:[] },
+      players: {},
+      ownership: {},
+      log: {}
+    };
+    await db.ref(`rooms/${ROOM_ID}`).set(base);
+    await joinRoomInternal(name);
+  }
+
+  async function joinRoom() {
+    ROOM_ID = (roomIdEl.value || '').trim();
+    const name = (playerNameEl.value||'Гравець').trim() || 'Гравець';
+    if(!ROOM_ID) return alert('Введи код кімнати');
+    await joinRoomInternal(name);
+  }
+
+  async function joinRoomInternal(name) {
+    lobby.classList.add('hidden');
+    panel.classList.remove('hidden');
+    roomInfo.textContent = ROOM_ID;
+
+    // presence
+    const pRef = roomRef(`/players/${UID}`);
+    const connRef = db.ref('.info/connected');
+    connRef.on('value', snap => {
+      if (snap.val() === true) {
+        pRef.onDisconnect().update({ connected:false });
+        pRef.update({ name, cash:START_CASH, pos:0, inJail:false, bankrupt:false, connected:true });
+      }
+    });
+
+    // subscribe
+    roomRef().on('value', (snap)=>{
+      const room = snap.val() || {};
+      renderPerimeter(room);
+      renderPlayers(room);
+      renderLog(room);
+      updateHUD(room);
+    });
+  }
+
+  async function appendLogOnline(msg) {
+    const entry = { t: Date.now(), msg };
+    await roomRef('/log').push(entry);
+  }
+
+  async function startGameOnline() {
+    const snap = await roomRef().get();
+    const room = snap.val() || {};
+    const players = room.players || {};
+    const order = Object.keys(players); // порядок підключення
+
+    await roomRef('/state').update({
+      started: true,
+      current: 0,
+      turnOwner: order[0] || null,
+      order
+    });
+    await appendLogOnline('Гру розпочато! Успіхів!');
+  }
+
+  function applyChance(p) {
+    const card = chanceDeck[randInt(0, chanceDeck.length-1)];
+    card.effect(p);
+    return `«Шанс»: ${card.text}`;
+  }
+  function applyEvent(room, uid) {
+    // особливий випадок: клітинка 30 = "У ТЮРМУ!"
+    if ((room.players[uid].pos||0) === 30) {
+      room.players[uid].pos = 10; // тюрма
+      room.players[uid].inJail = true;
+      room.players[uid].jailTurns = 2;
+      return `Подія: «Йди в тюрму» (перенесено на клітинку 10).`;
+    }
+    const card = eventDeck[randInt(0, eventDeck.length-1)];
+    const pos = room.players[uid].pos || 0;
+    const setPos = (target, withStart)=>{
+      let t = (typeof target==='function') ? target(pos) : target;
+      if (t<0) t=0;
+      room.players[uid].pos = t % tiles.length;
+      if (withStart===true) { room.players[uid].cash += PASS_START_REWARD; }
+    };
+    card.effect(room.players[uid], setPos, pos);
+    return `«Подія»: ${card.text}`;
+  }
+
+  async function rollDiceOnline() {
+    // анімація кубиків
+    diceWrap.classList.remove('shake'); void diceWrap.offsetWidth; diceWrap.classList.add('shake');
+
+    const s = await roomRef().get();
+    const room = s.val();
+    if (!room || !room.state) return;
+    if (room.state.turnOwner !== UID) return alert('Зараз не твій хід');
+
+    const d1 = randInt(1,6), d2 = randInt(1,6), steps = d1+d2;
+
+    await roomRef().transaction((data)=>{
+      if(!data || !data.state) return data;
+      const players = data.players || {};
+      const me = players[UID]; if(!me || me.bankrupt) return data;
+
+      // кубики
+      data.state.dice = [d1, d2];
+
+      // рух
+      const old = me.pos || 0;
+      const next = (old + steps) % tiles.length;
+      const passedStart = old + steps >= tiles.length;
+      me.pos = next;
+      if (passedStart) { me.cash = (me.cash||0) + PASS_START_REWARD; }
+
+      // ефекти
+      const tile = tiles[next];
+      let logMsg = `${me.name||UID} кидає ${d1}+${d2} та стає на «${tile.name}». `;
+
+      if (tile.type=== 'TAX') { me.cash -= tile.tax; logMsg += `Податок −${tile.tax} ШАГ.`; }
+      else if (tile.type=== 'JAIL') { me.inJail = true; me.jailTurns = 2; logMsg += `Тюрма на 2 ходи.`; }
+      else if (tile.type=== 'CHANCE') { logMsg += applyChance(me); }
+      else if (tile.type=== 'EVENT') { logMsg += applyEvent(data, UID); }
+      else if (tile.type=== 'PROPERTY') {
+        const owner = (data.ownership||{})[String(next)];
+        if (!owner) {
+          if ((me.cash||0) >= tile.price) {
+            data.ownership = data.ownership || {};
+            data.ownership[String(next)] = UID;
+            me.cash -= tile.price;
+            logMsg += `Купує за ${tile.price} ШАГ.`;
+          } else {
+            logMsg += `Не вистачає на купівлю (${tile.price} ШАГ).`;
+          }
+        } else if (owner !== UID) {
+          const rent = tile.rent;
+          me.cash -= rent;
+          if (data.players[owner]) data.players[owner].cash += rent;
+          logMsg += `Платить ренту ${rent} ШАГ гравцю ${data.players[owner]?.name||owner}.`;
+        }
+      }
+
+      // банкрутство
+      if ((me.cash||0) < -200) {
+        me.bankrupt = true;
+        Object.keys(data.ownership||{}).forEach(k => { if (data.ownership[k]===UID) delete data.ownership[k]; });
+        logMsg += ` ${me.name||UID} банкрут і вибуває.`;
+      }
+
+      // наступний хід
+      const order = data.state.order || Object.keys(players);
+      if (!order.length) return data;
+      const idx = order.indexOf(UID);
+      const nextIdx = (idx + 1) % order.length;
+      data.state.current = nextIdx;
+      data.state.turnOwner = order[nextIdx];
+
+      // лог
+      const entryKey = db.ref().push().key;
+      data.log = data.log || {};
+      data.log[entryKey] = { t: Date.now(), msg: logMsg };
+
+      return data;
+    });
+  }
+
+  async function resetOnline() {
+    if(!ROOM_ID) return;
+    await roomRef().update({
+      state: { started:false, current:0, turnOwner:null, dice:[1,1], order:[] },
+      ownership: {},
+    });
+    await roomRef('/players').get().then(snap=>{
+      const p = snap.val()||{};
+      Object.keys(p).forEach(uid=>{
+        roomRef(`/players/${uid}`).update({ cash:START_CASH, pos:0, inJail:false, jailTurns:0, bankrupt:false });
+      });
+    });
+    await appendLogOnline('Гру скинуто.');
+  }
+
+  /* ===== Події UI ===== */
+  btnCreate.onclick = createRoom;
+  btnJoin.onclick   = joinRoom;
+  btnStartGame.onclick = startGameOnline;
+  btnRoll.onclick = rollDiceOnline;
+  btnReset.onclick = resetOnline;
+
+  /* ===== Перший рендер порожньої дошки ===== */
+  (function initBoardOnce(){
+    renderPerimeter(null); // без гравців/власників
+    if (window.lucide) lucide.createIcons();
+  })();
+  </script>
+</body>
+</html>
