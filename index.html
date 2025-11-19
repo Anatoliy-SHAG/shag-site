@@ -1,66 +1,743 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>1SHAG Coin</title>
+    <meta charset="UTF-8">
+    <title>SHAG — твій перший крок у криптовалюту</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SHAG — дружня українська криптоекосистема: токен 1SHAG на BSC, майнер, ігри та майбутня майнінгова монета. Твій перший крок у крипту.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050816;
+            --bg-soft: #0b1020;
+            --accent: #ffd54a;
+            --accent-soft: rgba(255, 213, 74, 0.08);
+            --accent-strong: #ffb300;
+            --text: #f5f5f5;
+            --muted: #a9b0c2;
+            --border: rgba(255, 255, 255, 0.08);
+            --error: #ff5252;
+            --success: #4caf50;
+        }
 
-  <!-- Іконка для вкладки -->
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="apple-touch-icon" href="logo.png.png">
+        * {
+            box-sizing: border-box;
+        }
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      text-align: center;
-    }
-    header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    header img {
-      width: 150px;
-      border-radius: 50%;
-    }
-    h1 {
-      margin: 15px 0 0;
-    }
-    a.button {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 15px 25px;
-      background: #22c55e;
-      color: white;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    a.button:hover {
-      background: #16a34a;
-    }
-  </style>
+        body {
+            margin: 0;
+            font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at top, #1b2940 0, #050816 45%, #000000 100%);
+            color: var(--text);
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(16px);
+            background: linear-gradient(to bottom, rgba(5, 8, 22, 0.92), rgba(5, 8, 22, 0.7));
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .logo-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 16px;
+            background: radial-gradient(circle at 30% 20%, #ffffff 0, #ffe082 10%, #ffb300 35%, #ff6f00 65%, #3e2723 100%);
+            box-shadow:
+                0 0 18px rgba(255, 213, 74, 0.75),
+                0 0 80px rgba(255, 143, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #1b1305;
+        }
+
+        .logo-sub {
+            font-size: 11px;
+            text-transform: none;
+            color: var(--muted);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 14px;
+            font-size: 13px;
+        }
+
+        .nav-links a {
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            color: var(--muted);
+        }
+
+        .nav-links a:hover {
+            border-color: var(--border);
+            color: var(--text);
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .nav-cta {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            border-radius: 999px;
+            padding: 10px 18px;
+            border: 1px solid transparent;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: 0.18s ease;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #1b1305;
+            box-shadow:
+                0 0 12px rgba(255, 213, 74, 0.7),
+                0 0 40px rgba(255, 213, 74, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow:
+                0 0 18px rgba(255, 213, 74, 0.9),
+                0 0 60px rgba(255, 143, 0, 0.5);
+        }
+
+        .btn-outline {
+            background: rgba(11, 16, 32, 0.9);
+            border-color: var(--border);
+            color: var(--muted);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-strong);
+            color: var(--accent);
+            background: rgba(11, 16, 32, 0.95);
+        }
+
+        main {
+            flex: 1;
+        }
+
+        .hero {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 16px 52px;
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+            gap: 32px;
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background-color: var(--accent-soft);
+            border: 1px solid rgba(255, 213, 74, 0.35);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #ffe082;
+            margin-bottom: 14px;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: radial-gradient(circle, #b2ff59 0, #4caf50 40%, #1b5e20 100%);
+            box-shadow: 0 0 10px rgba(129, 199, 132, 0.8);
+        }
+
+        .hero-title {
+            font-size: clamp(26px, 5vw, 34px);
+            line-height: 1.2;
+            margin: 0 0 10px;
+        }
+
+        .hero-title span {
+            color: var(--accent);
+        }
+
+        .hero-subtitle {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+
+        .hero-footnote {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .hero-footnote code {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 3px 6px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .hero-card {
+            border-radius: 18px;
+            padding: 18px 18px 16px;
+            background: radial-gradient(circle at top left, #263238 0, #0b1020 45%, #050816 110%);
+            border: 1px solid var(--border);
+            box-shadow:
+                0 24px 60px rgba(0, 0, 0, 0.85),
+                0 0 50px rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::before {
+            content: "";
+            position: absolute;
+            inset: -30%;
+            background:
+                radial-gradient(circle at 0 0, rgba(255, 213, 74, 0.24) 0, transparent 40%),
+                radial-gradient(circle at 100% 0, rgba(79, 195, 247, 0.22) 0, transparent 45%);
+            opacity: 0.75;
+            pointer-events: none;
+        }
+
+        .hero-card-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: #c5e1a5;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-balance {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .card-balance span {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--muted);
+            margin-left: 4px;
+        }
+
+        .card-meter {
+            margin-bottom: 12px;
+        }
+
+        .meter-label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .meter-bar {
+            position: relative;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+
+        .meter-fill {
+            position: absolute;
+            inset: 0;
+            width: 40%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+            box-shadow: 0 0 14px rgba(255, 213, 74, 0.9);
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .tag {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background-color: rgba(5, 8, 22, 0.7);
+            color: var(--muted);
+        }
+
+        .card-contract {
+            font-size: 10px;
+            color: var(--muted);
+            border-top: 1px dashed rgba(255, 255, 255, 0.14);
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+
+        .card-contract code {
+            font-family: monospace;
+            font-size: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 6px;
+            border-radius: 999px;
+        }
+
+        .section {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 16px 40px;
+        }
+
+        .section-header {
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            margin: 0 0 6px;
+        }
+
+        .section-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            border-radius: 16px;
+            padding: 14px 14px 15px;
+            background: rgba(11, 16, 32, 0.96);
+            border: 1px solid var(--border);
+        }
+
+        .card h3 {
+            margin: 0 0 8px;
+            font-size: 15px;
+        }
+
+        .card p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .step {
+            border-radius: 14px;
+            padding: 10px;
+            background: rgba(7, 11, 26, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 11px;
+        }
+
+        .step-num {
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            border: 1px solid rgba(255, 213, 74, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #ffd54f;
+            margin-bottom: 4px;
+        }
+
+        .step-title {
+            font-weight: 600;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .step p {
+            font-size: 11px;
+        }
+
+        .token-info {
+            font-size: 12px;
+            color: var(--muted);
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px 10px;
+            margin-top: 10px;
+        }
+
+        .token-info span {
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            background: rgba(3, 5, 12, 0.98);
+        }
+
+        .footer-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 10px 16px 14px;
+            font-size: 11px;
+            color: var(--muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-inner code {
+            font-family: monospace;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 3px 6px;
+            border-radius: 999px;
+        }
+
+        .footer-note {
+            max-width: 480px;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                grid-template-columns: minmax(0, 1fr);
+                padding-top: 26px;
+            }
+
+            .hero-card {
+                order: -1;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .nav-cta .btn-outline {
+                display: none;
+            }
+
+            .section {
+                padding-bottom: 28px;
+            }
+
+            .grid-2 {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .steps {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .steps {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .hero {
+                padding-bottom: 36px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <!-- Логотип -->
-    <img src="logo.png.png" alt="1SHAG Logo">
-    <h1>Вітаємо у світі 1SHAG!</h1>
-  </header>
+<div class="page">
+    <header>
+        <div class="nav">
+            <div class="logo">
+                <div class="logo-mark">Ш</div>
+                <div>
+                    SHAG
+                    <div class="logo-sub">Твій перший крок у крипту</div>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="#about">Про SHAG</a>
+                <a href="#start">Як почати</a>
+                <a href="#token">Контракт</a>
+            </nav>
+            <div class="nav-cta">
+                <a href="shag_miner.html" class="btn btn-primary">Запустити майнер</a>
+                <a href="#token" class="btn btn-outline">Додати токен</a>
+            </div>
+        </div>
+    </header>
 
-  <p>Натисни кнопку нижче, щоб запустити майнер ⛏️</p>
+    <main>
+        <section class="hero">
+            <div>
+                <div class="badge">
+                    <div class="badge-dot"></div>
+                    Українська криптоекосистема SHAG
+                </div>
+                <h1 class="hero-title">
+                    Зроби свій <span>перший крок</span><br> у криптовалюту разом із SHAG
+                </h1>
+                <p class="hero-subtitle">
+                    SHAG — це дружня криптовалюта, створена для людей. Спочатку — промо-токен
+                    <strong>1SHAG</strong> у мережі Binance Smart Chain, далі — справжня майнінгова монета,
+                    яку можна видобувати процесором.
+                </p>
+                <div class="hero-actions">
+                    <a href="shag_miner.html" class="btn btn-primary">
+                        🚀 Запустити псевдо-майнер
+                    </a>
+                    <a href="#start" class="btn btn-outline">
+                        📘 Інструкція: як почати
+                    </a>
+                </div>
+                <div class="hero-footnote">
+                    Офіційний токен: <code>1SHAG (BEP-20)</code> в мережі BSC.
+                    <br>Старі тестові токени SHAG без логотипа — ігноруємо.
+                </div>
+            </div>
 
-  <a href="SHAG_pseudo_miner_150perday_claim100.html" class="button">
-    ▶️ Play / Miner
-  </a>
+            <div class="hero-card">
+                <div class="hero-card-inner">
+                    <div class="card-label">
+                        <span>Демо-майнер 1SHAG</span>
+                        <span style="font-size:10px;color:var(--muted);">150 SHAG / доба (умовно)</span>
+                    </div>
+                    <div class="card-balance">
+                        0.000 <span>SHAG</span>
+                    </div>
+                    <div class="card-meter">
+                        <div class="meter-label">
+                            <span>Шанс закохатись у SHAG</span>
+                            <span>100%</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="meter-fill"></div>
+                        </div>
+                    </div>
+                    <div class="card-tags">
+                        <div class="tag">CPU-майнінг у майбутньому</div>
+                        <div class="tag">Промо-токен 1SHAG на BSC</div>
+                        <div class="tag">Український криптопроєкт</div>
+                    </div>
+                    <div class="card-contract">
+                        Офіційний контракт токена 1SHAG (BEP-20):
+                        <br>
+                        <code id="contractCopy">0x38040A7763da2f4aF94fefB0922A3F4Bd5B91772</code>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-  <p style="margin-top:40px;">Контракт токена:<br>
-    <code>0x38040A7763da2f4aF94fefB0922A3F4Bd5B91772</code>
-  </p>
+        <section class="section" id="about">
+            <div class="section-header">
+                <h2 class="section-title">Що таке SHAG?</h2>
+                <p class="section-subtitle">
+                    SHAG — це крок за кроком побудована екосистема: від промо-токена до повноцінної майнінгової монети.
+                </p>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>1SHAG (BEP-20) — токен першого кроку</h3>
+                    <p>
+                        1SHAG — це токен у мережі Binance Smart Chain, створений для аірдропів, псевдо-майнінгу,
+                        ігор та експериментів. Він допомагає легко підключитись до екосистеми SHAG через
+                        MetaMask або Trust Wallet.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>SHAG (native coin) — майбутня майнінгова монета</h3>
+                    <p>
+                        У планах — запустити повноцінну монету SHAG на власному блокчейні з CPU-майнінгом.
+                        Блокчейн SHAG стане ядром екосистеми: майнери, вузли, ігри та утиліті.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="start">
+            <div class="section-header">
+                <h2 class="section-title">Як почати зі SHAG за 5 хвилин</h2>
+                <p class="section-subtitle">
+                    Мінімум технічних слів, максимум конкретики. Все просто, як зробити один крок.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-num">1</div>
+                        <div class="step-title">Встанови гаманець</div>
+                        <p>Завантаж <strong>MetaMask</strong> (браузер/мобільний) або <strong>Trust Wallet</strong>.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">2</div>
+                        <div class="step-title">Додай мережу BSC</div>
+                        <p>Обери мережу <strong>Binance Smart Chain</strong> (BSC). У більшості гаманців вона є одразу.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">3</div>
+                        <div class="step-title">Додай токен 1SHAG</div>
+                        <p>
+                            Натисни «Додати токен» → «Custom / Власний» → встав
+                            <strong>адресу контракту</strong> SHAG знизу.
+                        </p>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">4</div>
+                        <div class="step-title">Запусти псевдо-майнер</div>
+                        <p>
+                            Перейди до <strong>майнера SHAG</strong>, натисни Старт і грайся з псевдо-видобутком.
+                            Реальні фаусет-виплати будуть додані пізніше.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="token">
+            <div class="section-header">
+                <h2 class="section-title">Офіційні дані токена 1SHAG</h2>
+                <p class="section-subtitle">
+                    Перевір, що ти додав саме цей токен. Усі старі або тестові SHAG без логотипа — ігноруємо.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="token-info">
+                    <div><strong>Назва:</strong> <span>1SHAG</span></div>
+                    <div><strong>Символ:</strong> <span>SHAG</span></div>
+                    <div><strong>Мережа:</strong> <span>BSC (BEP-20)</span></div>
+                    <div><strong>Десяткові:</strong> <span>18</span></div>
+                    <div style="grid-column: 1 / -1;">
+                        <strong>Адреса контракту:</strong><br>
+                        <span id="contractCopy2">0x38040A7763da2f4aF94fefB0922A3F4Bd5B91772</span>
+                    </div>
+                </div>
+                <p style="margin-top:12px;font-size:11px;color:var(--muted);">
+                    Порада: натисни на адресу контракту, щоб скопіювати її, і встав у MetaMask / Trust Wallet,
+                    коли додаєш токен вручну.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-note">
+                © <span id="year"></span> SHAG. Це не фінансова порада. Не інвестуй останні гроші. 
+                Спочатку розберися, потім роби свій перший крок.
+            </div>
+            <div>
+                Офіційний контракт: <code>0x38040A7763da2f4aF94fefB0922A3F4Bd5B91772</code>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<script>
+    // Поточний рік у футері
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    function copyContract(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const text = el.textContent.trim();
+        navigator.clipboard?.writeText(text).then(() => {
+            alert('Адресу контракту скопійовано: ' + text);
+        }).catch(() => {
+            alert('Скопіюй адресу вручну: ' + text);
+        });
+    }
+
+    document.getElementById('contractCopy').onclick = function () {
+        copyContract('contractCopy');
+    };
+    document.getElementById('contractCopy2').onclick = function () {
+        copyContract('contractCopy2');
+    };
+</script>
 </body>
 </html>
